@@ -99,7 +99,7 @@ scan_command(){
 				for i in $(echo $ips)
 				do
 					echo ${i}
-					ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i} - UP" &
+					ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i} - UP" && targets=("${targets[@]}" ${i}}) &
 				done; wait
 				;;
 		    t) # port scan
@@ -107,8 +107,9 @@ scan_command(){
 				do
 			        for j in $(echo ips)
 			        do
-			                timeout 1 bash -c "echo '' > /dev/tcp/$j/$i" 2>/dev/null && echo "HOST $i - PORT $j ACTIVE" &
+			                timeout 1 bash -c "echo '' > /dev/tcp/$j/$i" 2>/dev/null && echo "HOST $i - PORT $j ACTIVE" &&  nets=("${targets[@]}" $i)&
 			        done; wait
+					echo $targets
 				done
 				;;
 		esac
@@ -132,10 +133,21 @@ pivot_command(){
 }
 
 show_command(){
-	while getopts "h" opt; do
+	while getopts "hntp" opt; do
 		case "$opt" in
 			h)
 				info_usage
+				return
+				;;
+			n)
+				echo $nets
+				return
+				;;
+			t)
+				echo $targets
+				return
+				;;
+			p)
 				return
 				;;
 		esac
@@ -143,8 +155,9 @@ show_command(){
 	# show info
 }
 
-exec_command(){
-	return
+exec_command() {
+	echo "Executing shell command: $1"
+	bash -c "${1}"
 }
 
 # main -------------------------------------------------------------------------
