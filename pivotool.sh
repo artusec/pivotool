@@ -13,15 +13,16 @@
 # vars -------------------------------------------------------------------------
 declare -a nets
 declare -a targets
+declare -a ports
 
 # banner -----------------------------------------------------------------------
 banner(){
 cat << "EOF"
 
-██████╗ ██╗██╗   ██╗ ██████╗ ████████╗ ██████╗  ██████╗ ██╗     
-██╔══██╗██║██║   ██║██╔═══██╗╚══██╔══╝██╔═══██╗██╔═══██╗██║     
-██████╔╝██║██║   ██║██║   ██║   ██║   ██║   ██║██║   ██║██║     
-██╔═══╝ ██║╚██╗ ██╔╝██║   ██║   ██║   ██║   ██║██║   ██║██║     
+██████╗ ██╗██╗   ██╗ ██████╗ ████████╗ ██████╗  ██████╗ ██╗
+██╔══██╗██║██║   ██║██╔═══██╗╚══██╔══╝██╔═══██╗██╔═══██╗██║
+██████╔╝██║██║   ██║██║   ██║   ██║   ██║   ██║██║   ██║██║
+██╔═══╝ ██║╚██╗ ██╔╝██║   ██║   ██║   ██║   ██║██║   ██║██║
 ██║     ██║ ╚████╔╝ ╚██████╔╝   ██║   ╚██████╔╝╚██████╔╝███████╗
 ╚═╝     ╚═╝  ╚═══╝   ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝
 by artuyero
@@ -62,7 +63,7 @@ get_command(){
 				get_usage
 				return
 				;;
-		    n) # nets
+			n) # nets
 				nets=$(ip a | grep "inet " | awk '{print $2}')
 				for net in $(echo $nets)
 				do
@@ -70,7 +71,7 @@ get_command(){
 				done
 				echo $nets
 				;;
-		    i) # system info
+		    	i) # system info
 				echo $(uname -a)
 				;;
 		esac
@@ -92,25 +93,28 @@ scan_command(){
 				IFS=. read a b c d <<<${BASE_IP}
 				ip=$((($b << 16) + ($c << 8) + $d))
 				ipstart=$((${ip} & ${IP_MASK}))
-				ipend=$(((${ipstart} | ~${IP_MASK}) & 0x7FFFFFFF))
+				ipend=$(((${ipstart} | ~${IP_MASK}) & 0x7FFFFFFE))
 				ips=$(seq ${ipstart} ${ipend} | while read i; do
 				    echo $a.$((($i & 0xFF0000) >> 16)).$((($i & 0xFF00) >> 8)).$(($i & 0x00FF))
 				done)
-				for i in $(echo $ips)
+				temp=$(for i in $(echo $ips)
 				do
-					echo ${i}
-					ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i} - UP" && targets=("${targets[@]}" ${i}}) &
-				done; wait
+					ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i}" &
+				done; wait)
+				echo $temp
+				for i in $(echo $temp)
+				do
+					echo "adding ${i}"
+					targets=("${targets[@]}" ${i})
+				done
+				echo ${targets}
 				;;
-		    t) # port scan
+			t) # port scan
+			    	target=${targets[$OPTARG]}
 				for i in $(seq 1 65535)
 				do
-			        for j in $(echo ips)
-			        do
-			                timeout 1 bash -c "echo '' > /dev/tcp/$j/$i" 2>/dev/null && echo "HOST $i - PORT $j ACTIVE" &&  nets=("${targets[@]}" $i)&
-			        done; wait
-					echo $targets
-				done
+					timeout 1 bash -c "echo '' > /dev/tcp/${target}/${i}" 2>/dev/null && echo "HOST $i - PORT $j ACTIVE" && ports=("${ports[@]}" ${i}) &
+				done; wait
 				;;
 		esac
 	done
