@@ -15,6 +15,8 @@ declare -a nets
 declare -a targets
 declare -a ports
 
+PROMPT="_PIVOTOOL_:~$"
+
 # banner -----------------------------------------------------------------------
 banner(){
 cat << "EOF"
@@ -40,19 +42,59 @@ trap ctrl_c INT
 
 # usages -----------------------------------------------------------------------
 usage(){
-        echo "Displaying help"
+        echo "Usage:"
+        echo "  $ ./pivotool.sh"
+        echo
+        echo "Commands:"
+        echo "  get     Obtains data from the victim server and its environment."
+        echo "  scan    Performs a scan of a network or host."
+        echo "  pivot   Performs port forwarding."
+        echo "  show    Displays the information that has been collected."
+        echo "  exec    Run a bash command on the system."
+        echo
+        echo "Use the "-h" option after each command to get its help."
+        echo
 }
 
 get_usage() {
-        echo "Displaying get help"
+        echo "[*] Displaying \"get\" help..."
+        echo
+        echo "\$ get [flags] -> Obtains data from the victim server and its environment."
+        echo
+        echo "Flags:"
+        echo "  -n    Gets the networks to which the host is connected."
+        echo "  -i    Gets system info."
+        echo
 }
 
 scan_usage() {
-
-        echo "Displaying scan help"
+        echo "[*] Displaying \"scan\" help..."
+        echo
+        echo "\$ scan [flags] -> Performs a scan of a network or host."
+        echo
+        echo "Flags:"
+        echo "  -n INT    Performs a ping scan on the selected network."
+        echo "  -t INT    Performs a simple port scan on the selected host."
+        echo
 }
 
-info_usage() {
+pivot_usage() {
+        echo "[*] Displaying \"pivot\" help..."
+        echo
+        # TODO
+}
+
+show_usage() {
+        echo "[*] Displaying \"show\" help..."
+        echo
+        echo "$ show [flags} -> Displays the information that has been collected."
+        echo
+        echo "Flags:"
+        echo "  -n    Show the nets"
+        echo "  -t    Show the targets"
+}
+
+exec_usage() {
         echo "Displaying info help"
 }
 
@@ -84,7 +126,7 @@ get_command(){
 scan_command(){
         while getopts "hn:t:" opt; do
                 case "$opt" in
-                        h)
+                        h) # help
                                 scan_usage
                                 return
                                 ;;
@@ -99,7 +141,7 @@ scan_command(){
                                 ipstart=$((${ip} & ${IP_MASK}))
                                 ipend=$(((${ipstart} | ~${IP_MASK}) & 0x7FFFFFFE))
                                 ips=$(seq ${ipstart} ${ipend} | while read i; do
-                                    echo $a.$((($i & 0xFF0000) >> 16)).$((($i & 0xFF00) >> 8)).$(($i & 0x00FF))
+                                        echo $a.$((($i & 0xFF0000) >> 16)).$((($i & 0xFF00) >> 8)).$(($i & 0x00FF))
                                 done)
                                 temp=$(for i in $(echo $ips)
                                 do
@@ -132,10 +174,10 @@ pivot_command(){
                                 usage
                                 ;;
                         v)
-                                echo "v detected"
+                                # TODO
                                 ;;
                         f)
-                                echo "f detected"
+                                # TODO
                                 ;;
                 esac
         done
@@ -145,7 +187,7 @@ show_command(){
         while getopts "hntp" opt; do
                 case "$opt" in
                         h)
-                                info_usage
+                                show_usage
                                 return
                                 ;;
                         n)
@@ -157,15 +199,15 @@ show_command(){
                                 return
                                 ;;
                         p)
+                                # TODO
                                 return
                                 ;;
                 esac
         done
-        # show info
 }
 
 exec_command() {
-        echo "Executing shell command: $1"
+        echo "[*] Executing shell command: $1"
         bash -c "${1}"
 }
 
@@ -173,7 +215,7 @@ exec_command() {
 banner
 while true
 do
-        read -p "_PIVOTOOL_:~$ " line
+        read -p "$PROMPT " line
         command=$(echo $line | cut -d " " -f1)
         args=$(echo $line | cut -d " " -f2-)
         case $(echo $command | cut -f1) in
@@ -192,10 +234,7 @@ do
                 exec)
                         exec_command "$args"
                         ;;
-                help)
-                        usage
-                        ;;
-                *)
+                help|*)
                         usage
                         ;;
         esac
