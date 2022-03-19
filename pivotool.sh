@@ -7,7 +7,7 @@
 # post exploitation phase to pivot to other systems.                           #
 # Usage:                                                                       #
 # $ ./pivotool                                                                 #
-# (promt in progress)~$ <command> <args>                                       #
+# _PIVOTOOL_:~$ <command> <args>                                               #
 ################################################################################
 
 # vars -------------------------------------------------------------------------
@@ -95,7 +95,17 @@ show_usage() {
 }
 
 exec_usage() {
-        echo "Displaying info help"
+        echo "Displaying exec help"
+}
+
+# utils ------------------------------------------------------------------------
+is_positive_integer() {
+        if [ "$1" -ge 0 ] 2>/dev/null; then
+                true
+        else
+                echo "[ERROR] Argument must be a positive integer. Got: $1"
+                false
+        fi
 }
 
 # commands ---------------------------------------------------------------------
@@ -131,6 +141,7 @@ scan_command(){
                                 return
                                 ;;
                         n) # ping scan
+                                if ! is_positive_integer "$OPTARG" ; then return; fi
                                 net=${nets[$OPTARG]}
                                 echo "[*] Scanning net: $net"
                                 BASE_IP=$(echo $net | awk -F\/ '{print $1}')
@@ -143,7 +154,7 @@ scan_command(){
                                 ips=$(seq ${ipstart} ${ipend} | while read i; do
                                         echo $a.$((($i & 0xFF0000) >> 16)).$((($i & 0xFF00) >> 8)).$(($i & 0x00FF))
                                 done)
-                                temp=$(for i in $(echo $ips)
+                                unset temp; temp=$(for i in $(echo $ips)
                                 do
                                         ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i}" &
                                 done; wait)
@@ -152,16 +163,19 @@ scan_command(){
                                         echo "[*] Discovered ${host}"
                                         targets=( "${targets[@]}" "${host}" )
                                 done
-                                echo "${targets[@]}"
+                                echo "[*] Summary: ${targets[@]}"
                                 ;;
-                        t) # port scan
+                        t) # port scan # TODO 
+                                if ! is_positive_integer "$OPTARG" ; then return; fi
                                 target=${targets[$OPTARG]}
                                 echo "Scanning target: $target"
-                                for port in $(seq 1 65535)
+                                unset temp; temp=$(for i in $(seq 1 65535)
                                 do
-                                        timeout 1 bash -c "echo '' > /dev/tcp/${target}/${port}" 2>/dev/null && echo "[*] PORT $port ACTIVE" && ports=( "${ports[@]}" "${port}" ) &
-                                done; wait
-                                echo "${ports[@]}"
+                                        timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i}," &
+                                done; wait)
+                                echo "[*] Discovered ${temp}"
+                                ports=( "${ports[$OPTARG]}" "${temp}" )
+                                echo "[*] Summary: ${ports[@]}"
                                 ;;
                 esac
         done
@@ -199,7 +213,7 @@ show_command(){
                                 return
                                 ;;
                         p)
-                                # TODO
+                                echo "${ports[@]}"
                                 return
                                 ;;
                 esac
@@ -207,7 +221,7 @@ show_command(){
 }
 
 exec_command() {
-        echo "[*] Executing shell command: $1"
+        echo "[*] Executing shell command: ${1}"
         bash -c "${1}"
 }
 
