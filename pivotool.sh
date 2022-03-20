@@ -34,7 +34,7 @@ EOF
 
 # exit -------------------------------------------------------------------------
 ctrl_c(){
-        echo -e "\n [*] Exiting...\n"
+        echo -e "[*] Exiting.\n"
         exit 1
 }
 
@@ -57,7 +57,7 @@ usage(){
 }
 
 get_usage() {
-        echo "[*] Displaying \"get\" help..."
+        echo "[*] Displaying \"get\" help."
         echo
         echo "\$ get [flags] -> Obtains data from the victim server and its environment."
         echo
@@ -68,7 +68,7 @@ get_usage() {
 }
 
 scan_usage() {
-        echo "[*] Displaying \"scan\" help..."
+        echo "[*] Displaying \"scan\" help."
         echo
         echo "\$ scan [flags] -> Performs a scan of a network or host."
         echo
@@ -79,13 +79,13 @@ scan_usage() {
 }
 
 pivot_usage() {
-        echo "[*] Displaying \"pivot\" help..."
+        echo "[*] Displaying \"pivot\" help."
         echo
         # TODO
 }
 
 show_usage() {
-        echo "[*] Displaying \"show\" help..."
+        echo "[*] Displaying \"show\" help."
         echo
         echo "$ show [flags} -> Displays the information that has been collected."
         echo
@@ -96,6 +96,34 @@ show_usage() {
 
 exec_usage() {
         echo "Displaying exec help"
+}
+
+# shows ------------------------------------------------------------------------
+show_nets() {
+        cont=0
+        for net in "${nets[@]}"
+        do
+                echo "$cont -> $net"
+                ((cont=cont+1))
+        done  
+}
+
+show_targets() {
+        cont=0
+        for target in "${targets[@]}"
+        do
+                echo "$cont -> $target"
+                ((cont=cont+1))
+        done 
+}
+
+show_ports() {
+        cont=0
+        for port in "${ports[@]}"
+        do
+                echo "$cont -> ${targets[$cont]} : $port"
+                ((cont=cont+1))
+        done
 }
 
 # utils ------------------------------------------------------------------------
@@ -117,16 +145,16 @@ get_command(){
                                 return
                                 ;;
                         n) # nets
-                                echo "[*] Getting nets..."
+                                echo "[*] Getting nets."
                                 temp=$(ip a | grep "inet " | awk '{print $2}')
                                 for net in $(echo $temp)
                                 do
                                         nets=( "${nets[@]}" "$net" )
                                 done
-                                echo "${nets[@]}"
+                                show_nets
                                 ;;
                         i) # system info
-                                echo "[*] Getting system info..."
+                                echo "[*] Getting system info."
                                 echo $(uname -a)
                                 ;;
                 esac
@@ -141,7 +169,9 @@ scan_command(){
                                 return
                                 ;;
                         n) # ping scan
+                                if [ "${#nets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered nets. Run 'get -n'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
+                                if [ "$OPTARG" -gt ${#nets[@]} ] ; then echo "[ERROR] Invalid network number. Enter from 0 to $((${#nets[@]}-1))"; return; fi
                                 net=${nets[$OPTARG]}
                                 echo "[*] Scanning net: $net"
                                 BASE_IP=$(echo $net | awk -F\/ '{print $1}')
@@ -163,19 +193,21 @@ scan_command(){
                                         echo "[*] Discovered ${host}"
                                         targets=( "${targets[@]}" "${host}" )
                                 done
-                                echo "[*] Summary: ${targets[@]}"
+                                show_targets
                                 ;;
-                        t) # port scan # TODO 
+                        t) # port scan # TODO
+                                if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n <net>'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
+                                if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
                                 target=${targets[$OPTARG]}
                                 echo "Scanning target: $target"
-                                unset temp; temp=$(for i in $(seq 1 65535)
+                                unset temp; temp=$(for i in $(seq 1 81)
                                 do
-                                        timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i}," &
+                                        timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
                                 echo "[*] Discovered ${temp}"
-                                ports=( "${ports[$OPTARG]}" "${temp}" )
-                                echo "[*] Summary: ${ports[@]}"
+                                ports=( "${ports[@]:0:$OPTARG}" "${temp}" "${ports[@]:$OPTARG}")
+                                show_ports
                                 ;;
                 esac
         done
@@ -205,15 +237,15 @@ show_command(){
                                 return
                                 ;;
                         n)
-                                echo "${nets[@]}"
+                                show_nets
                                 return
                                 ;;
                         t)
-                                echo "${targets[@]}"
+                                show_targets
                                 return
                                 ;;
                         p)
-                                echo "${ports[@]}"
+                                show_ports
                                 return
                                 ;;
                 esac
