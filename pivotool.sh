@@ -81,7 +81,13 @@ scan_usage() {
 pivot_usage() {
         echo "[*] Displaying \"pivot\" help."
         echo
-        # TODO
+        echo "\$ pivot [flags] -> Perform a port forwarding."
+        echo
+        echo "Flags:"
+        echo "  -t INT    Index of the target (show -t)."
+        echo "  -p INT    Remote port."
+        echo "  -P INT    Local port."
+        echo
 }
 
 show_usage() {
@@ -145,6 +151,7 @@ get_command(){
                                 return
                                 ;;
                         n) # nets
+                                nets=()
                                 echo "[*] Getting nets."
                                 temp=$(ip a | grep "inet " | awk '{print $2}')
                                 for net in $(echo $temp)
@@ -195,7 +202,7 @@ scan_command(){
                                 done
                                 show_targets
                                 ;;
-                        t) # port scan # TODO
+                        t) # port scan
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n <net>'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
@@ -214,19 +221,31 @@ scan_command(){
 }
 
 pivot_command(){
-        while getopts "h?vf:" opt; do
+        while getopts "h?t:p:P:" opt; do
                 case "$opt" in
                         h|\?)
-                                usage
+                                pivot_usage
                                 ;;
-                        v)
-                                # TODO
+                        t)
+                                if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n INT'."; return; fi
+                                if ! is_positive_integer "$OPTARG" ; then return; fi
+                                if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
+                                pivotTarget=$OPTARG
                                 ;;
-                        f)
-                                # TODO
+                        p)
+                                remotePort=$OPTARG
+                                ;;
+                        P)
+                                localPort=$OPTARG
                                 ;;
                 esac
         done
+        if [ -z "$pivotTarget" ] || [ -z "$remotePort" ] || [ -z "$localPort" ]; then
+                echo "[ERROR] Mandatory opts: -t -p -P"
+                return
+        else
+                rm -f fifo;mkfifo fifo;nc -v -lk -p $localPort <fifo | nc -v $pivotTarget $remotePort >fifo
+        fi
 }
 
 show_command(){
@@ -279,6 +298,10 @@ do
                         ;;
                 exec)
                         exec_command "$args"
+                        ;;
+                clear|
+                      )
+                        clear
                         ;;
                 help|*)
                         usage
