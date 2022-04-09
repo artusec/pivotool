@@ -34,8 +34,7 @@ EOF
 
 # exit -------------------------------------------------------------------------
 ctrl_c(){
-        echo -e "[*] Exiting.\n"
-        exit 1
+        echo -e "\n[*] Exiting.\n"; exit 1
 }
 
 trap ctrl_c INT
@@ -98,6 +97,7 @@ show_usage() {
         echo "Flags:"
         echo "  -n    Show the nets"
         echo "  -t    Show the targets"
+        echo
 }
 
 exec_usage() {
@@ -144,7 +144,7 @@ is_positive_integer() {
 
 # commands ---------------------------------------------------------------------
 get_command(){
-        while getopts "hnt:i" opt; do
+        while getopts "hni" opt; do
                 case "$opt" in
                         h) # help
                                 get_usage
@@ -195,15 +195,18 @@ scan_command(){
                                 do
                                         ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i}" &
                                 done; wait)
+
                                 for host in $(echo $temp)
                                 do
                                         echo "[*] Discovered ${host}"
-                                        targets=( "${targets[@]}" "${host}" )
+                                        if [[ ! " ${targets[*]} " =~ " ${host} " ]]; then
+                                                targets=( "${targets[@]}" "${host}" )
+                                        fi
                                 done
                                 show_targets
                                 ;;
                         t) # port scan
-                                if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n <net>'."; return; fi
+                                if [ "${#targets[@]}" -eq 0 ] ; then echo '[ERROR] There are no registered targets. Run "scan -n <net>".'; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
                                 target=${targets[$OPTARG]}
@@ -213,7 +216,8 @@ scan_command(){
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
                                 echo "[*] Discovered ${temp}"
-                                ports=( "${ports[@]:0:$OPTARG}" "${temp}" "${ports[@]:$OPTARG}")
+                                unset 'ports[$OPTARG]'
+                                ports=( "${ports[@]:0:$OPTARG}" "${temp}" "${ports[@]:$OPTARG}" )
                                 show_ports
                                 ;;
                 esac
@@ -221,7 +225,7 @@ scan_command(){
 }
 
 pivot_command(){
-        while getopts "h?t:p:P:" opt; do
+        while getopts "ht:p:P:" opt; do
                 case "$opt" in
                         h|\?)
                                 pivot_usage
@@ -230,7 +234,7 @@ pivot_command(){
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n INT'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
-                                pivotTarget=$OPTARG
+                                pivotTarget=${targets[$OPTARG]}
                                 ;;
                         p)
                                 remotePort=$OPTARG
@@ -240,11 +244,12 @@ pivot_command(){
                                 ;;
                 esac
         done
+        shift $((OPTIND -1))
         if [ -z "$pivotTarget" ] || [ -z "$remotePort" ] || [ -z "$localPort" ]; then
                 echo "[ERROR] Mandatory opts: -t -p -P"
                 return
         else
-                rm -f fifo;mkfifo fifo;nc -v -lk -p $localPort <fifo | nc -v $pivotTarget $remotePort >fifo
+                rm -f fifo;mkfifo fifo;nc -q -v -lk -p "$localPort" <fifo | nc -q -v "$pivotTarget" "$remotePort" >fifo
         fi
 }
 
@@ -281,26 +286,25 @@ banner
 while true
 do
         read -p "$PROMPT " line
-        command=$(echo $line | cut -d " " -f1)
-        args=$(echo $line | cut -d " " -f2-)
-        case $(echo $command | cut -f1) in
+        cmd=$(echo -e "$line \c" | cut -d ' ' -f1)
+        args=$(echo -e "$line \c" | cut -d' ' -f2-)
+        case "$cmd" in
                 get)
-                        get_command "$args"
+                        get_command $(echo "$args")
                         ;;
                 scan)
-                        scan_command "$args"
+                        scan_command $(echo "$args")
                         ;;
                 pivot)
-                        pivot_command "$args"
+                        pivot_command $(echo "$args")
                         ;;
                 show)
-                        show_command "$args"
+                        show_command $(echo "$args")
                         ;;
                 exec)
-                        exec_command "$args"
+                        exec_command $(echo "$args")
                         ;;
-                clear|
-                      )
+                clear)
                         clear
                         ;;
                 help|*)
