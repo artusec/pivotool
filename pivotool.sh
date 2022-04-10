@@ -14,6 +14,7 @@
 declare -a nets
 declare -a targets
 declare -a ports
+declare -a tunnels
 
 PROMPT="_PIVOTOOL_:~$"
 
@@ -34,6 +35,7 @@ EOF
 
 # exit -------------------------------------------------------------------------
 ctrl_c(){
+        house_cleaning
         echo -e "\n[*] Exiting.\n"; exit 1
 }
 
@@ -41,7 +43,8 @@ trap ctrl_c INT
 
 # usages -----------------------------------------------------------------------
 usage(){
-        echo "Usage:"
+        echo "Usagkali        9226  0.0  0.0   7008  3540 pts/1    S+   06:07   0:00  |       \_ bash -c rm -f fifo;mkfifo fifo;nc -l -p "8080" <fifo 
+e:"
         echo "  $ ./pivotool.sh"
         echo
         echo "Commands:"
@@ -132,6 +135,16 @@ show_ports() {
         done
 }
 
+show_tunnels() {
+        cont=0
+        for tunnel in "${tunnels[@]}"
+        do
+                echo "$cont -> ${tunnels[$cont]}"
+                ((cont=cont+1))
+        done
+}
+
+
 # utils ------------------------------------------------------------------------
 is_positive_integer() {
         if [ "$1" -ge 0 ] 2>/dev/null; then
@@ -140,6 +153,17 @@ is_positive_integer() {
                 echo "[ERROR] Argument must be a positive integer. Got: $1"
                 false
         fi
+}
+
+house_cleaning(){
+        echo "[*] Cleaning..."
+        rm -f ./fifo
+        for tunnel in "${tunnels[@]}"
+        do
+                pid=$(echo $tunnel | cut -d" " -f2)
+                kill $tunnel
+                ((cont=cont+1))
+        done
 }
 
 # commands ---------------------------------------------------------------------
@@ -249,12 +273,16 @@ pivot_command(){
                 echo "[ERROR] Mandatory opts: -t -p -P"
                 return
         else
-                rm -f fifo;mkfifo fifo;nc -q -v -lk -p "$localPort" <fifo | nc -q -v "$pivotTarget" "$remotePort" >fifo
+                bash -c "rm -f fifo;mkfifo fifo;nc -l -p \"$localPort\" <fifo | nc \"$pivotTarget\" \"$remotePort\" >fifo" &
+                sleep 2
+                echo "$localPort $pivotTarget $remotePort $!"
+                tunnels=( "${tunnels[@]}" "PID: $! -> $localPort:$pivotTarget:$remotePort" )
+                echo "[*] Tunnel created, check port $localPort"
         fi
 }
 
 show_command(){
-        while getopts "hntp" opt; do
+        while getopts "hntpT" opt; do
                 case "$opt" in
                         h)
                                 show_usage
@@ -270,6 +298,10 @@ show_command(){
                                 ;;
                         p)
                                 show_ports
+                                return
+                                ;;
+                        T)
+                                show_tunnels
                                 return
                                 ;;
                 esac
@@ -307,9 +339,14 @@ do
                 clear)
                         clear
                         ;;
+                exit)
+                        break
+                        ;;
                 help|*)
                         usage
                         ;;
         esac
         unset OPTIND
 done
+
+house_cleaning
