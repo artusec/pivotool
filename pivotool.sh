@@ -43,8 +43,7 @@ trap ctrl_c INT
 
 # usages -----------------------------------------------------------------------
 usage(){
-        echo "Usagkali        9226  0.0  0.0   7008  3540 pts/1    S+   06:07   0:00  |       \_ bash -c rm -f fifo;mkfifo fifo;nc -l -p "8080" <fifo 
-e:"
+        echo "Usage:"
         echo "  $ ./pivotool.sh"
         echo
         echo "Commands:"
@@ -350,4 +349,3 @@ do
 done
 
 house_cleaning
-
