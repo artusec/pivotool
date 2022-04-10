@@ -161,7 +161,7 @@ house_cleaning(){
         for tunnel in "${tunnels[@]}"
         do
                 pid=$(echo $tunnel | cut -d" " -f2)
-                kill $tunnel
+                pkill -TERM -P $pid
                 ((cont=cont+1))
         done
 }
@@ -350,3 +350,4 @@ do
 done
 
 house_cleaning
+
