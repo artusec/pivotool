@@ -18,6 +18,9 @@ declare -a tunnels
 
 PROMPT="_PIVOTOOL_:~$"
 
+# history ----------------------------------------------------------------------
+set -o history
+
 # banner -----------------------------------------------------------------------
 banner(){
 cat << "EOF"
@@ -37,6 +40,11 @@ EOF
 ctrl_c(){
         house_cleaning
         echo -e "\n[*] Exiting.\n"; exit 1
+        bye
+}
+
+bye(){
+        echo -e "Bye!"
 }
 
 trap ctrl_c INT
@@ -156,13 +164,15 @@ is_positive_integer() {
 
 house_cleaning(){
         echo "[*] Cleaning..."
-        rm -f ./fifo
+        history -c
+        shred -uf ./fifo  2>/dev/null
         for tunnel in "${tunnels[@]}"
         do
                 pid=$(echo $tunnel | cut -d" " -f2)
                 pkill -TERM -P $pid
                 ((cont=cont+1))
         done
+        bye
 }
 
 # commands ---------------------------------------------------------------------
@@ -201,7 +211,7 @@ scan_command(){
                         n) # ping scan
                                 if [ "${#nets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered nets. Run 'get -n'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
-                                if [ "$OPTARG" -gt ${#nets[@]} ] ; then echo "[ERROR] Invalid network number. Enter from 0 to $((${#nets[@]}-1))"; return; fi
+                                if [ "$OPTARG" -ge ${#nets[@]} ] ; then echo "[ERROR] Invalid network number. Enter from 0 to $((${#nets[@]}-1))"; return; fi
                                 net=${nets[$OPTARG]}
                                 echo "[*] Scanning net: $net"
                                 BASE_IP=$(echo $net | awk -F\/ '{print $1}')
@@ -231,7 +241,7 @@ scan_command(){
                         t) # port scan
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo '[ERROR] There are no registered targets. Run "scan -n <net>".'; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
-                                if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
+                                if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
                                 target=${targets[$OPTARG]}
                                 echo "Scanning target: $target"
                                 unset temp; temp=$(for i in $(seq 1 81)
@@ -316,7 +326,8 @@ exec_command() {
 banner
 while true
 do
-        read -p "$PROMPT " line
+        read -e -p "$PROMPT " line
+        history -s "$line"
         cmd=$(echo -e "$line \c" | cut -d ' ' -f1)
         args=$(echo -e "$line \c" | cut -d' ' -f2-)
         case "$cmd" in
