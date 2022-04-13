@@ -39,8 +39,9 @@ EOF
 # exit -------------------------------------------------------------------------
 ctrl_c(){
         house_cleaning
-        echo -e "\n[*] Exiting.\n"; exit 1
+        echo -e "\n[*] Exiting.\n";
         bye
+        exit 1
 }
 
 bye(){
@@ -111,7 +112,10 @@ show_usage() {
 }
 
 exec_usage() {
-        echo "Displaying exec help"
+        echo "Displaying \"exec\" help."
+        echo
+        echo "$ exec [command] -> Exec bash -c <command>."
+        echo
 }
 
 # shows ------------------------------------------------------------------------
@@ -128,7 +132,7 @@ show_targets() {
         cont=0
         for target in "${targets[@]}"
         do
-                echo "$cont -> $target"
+                echo "$cont -> $(echo $target | awk -F, '{print $2}')"
                 ((cont=cont+1))
         done 
 }
@@ -150,7 +154,6 @@ show_tunnels() {
                 ((cont=cont+1))
         done
 }
-
 
 # utils ------------------------------------------------------------------------
 is_positive_integer() {
@@ -233,7 +236,7 @@ scan_command(){
                                 do
                                         echo "[*] Discovered ${host}"
                                         if [[ ! " ${targets[*]} " =~ " ${host} " ]]; then
-                                                targets=( "${targets[@]}" "${host}" )
+                                                targets=( "${targets[@]}" "${OPTARG},${host}" )
                                         fi
                                 done
                                 show_targets
@@ -242,7 +245,7 @@ scan_command(){
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo '[ERROR] There are no registered targets. Run "scan -n <net>".'; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
-                                target=${targets[$OPTARG]}
+                                target=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
                                 echo "Scanning target: $target"
                                 unset temp; temp=$(for i in $(seq 1 81)
                                 do
@@ -344,7 +347,7 @@ do
                         show_command $(echo "$args")
                         ;;
                 exec)
-                        exec_command $(echo "$args")
+                        exec_command "$args"
                         ;;
                 clear)
                         clear
@@ -360,3 +363,5 @@ do
 done
 
 house_cleaning
+
+                                                                                                                                                           
