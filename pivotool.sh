@@ -39,9 +39,8 @@ EOF
 # exit -------------------------------------------------------------------------
 ctrl_c(){
         house_cleaning
-        echo -e "\n[*] Exiting.\n";
+        echo -e "\n[*] Exiting.\n"; exit 1
         bye
-        exit 1
 }
 
 bye(){
@@ -114,7 +113,14 @@ show_usage() {
 exec_usage() {
         echo "Displaying \"exec\" help."
         echo
-        echo "$ exec [command] -> Exec bash -c <command>."
+        echo "$ exec [command] -> Exec bash -c <command>"
+        echo
+}
+
+report_usage() {
+        echo "Displaying \"report\" help."
+        echo
+        echo "$ report -> Write all info in a file."
         echo
 }
 
@@ -168,7 +174,7 @@ is_positive_integer() {
 house_cleaning(){
         echo "[*] Cleaning..."
         history -c
-        shred -uf ./fifo  2>/dev/null
+        rm ./fifo  2>/dev/null
         for tunnel in "${tunnels[@]}"
         do
                 pid=$(echo $tunnel | cut -d" " -f2)
@@ -235,7 +241,7 @@ scan_command(){
                                 for host in $(echo $temp)
                                 do
                                         echo "[*] Discovered ${host}"
-                                        if [[ ! " ${targets[*]} " =~ " ${host} " ]]; then
+                                        if [[ ! " ${targets[*]} " =~ " $OPTARG,${host} " ]]; then
                                                 targets=( "${targets[@]}" "${OPTARG},${host}" )
                                         fi
                                 done
@@ -270,7 +276,7 @@ pivot_command(){
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n INT'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
-                                pivotTarget=${targets[$OPTARG]}
+                                pivotTarget=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
                                 ;;
                         p)
                                 remotePort=$OPTARG
@@ -325,6 +331,23 @@ exec_command() {
         bash -c "${1}"
 }
 
+report_command() {
+        cont=0
+        actualNet=$(echo "${targets[$cont]}" | awk -F, '{print $1}')
+        echo ${nets[$actualNet]}
+        for target in "${targets[@]}"
+        do
+                nextNet=$(echo "${targets[$cont]}" | awk -F, '{print $1}')
+                if [ ! $actualNet -eq $nextNet ] ; then
+                        actualNet=$nextNet
+                        echo ${nets[$actualNet]}
+                fi
+                echo "     $(echo $target | awk -F, '{print $2}')"
+                echo "        ${ports[$cont]}"
+                ((cont=cont+1))
+        done
+}
+
 # main -------------------------------------------------------------------------
 banner
 while true
@@ -352,6 +375,9 @@ do
                 clear)
                         clear
                         ;;
+                report)
+                        report_command
+                        ;;
                 exit)
                         break
                         ;;
@@ -363,5 +389,3 @@ do
 done
 
 house_cleaning
-
-                                                                                                                                                           
