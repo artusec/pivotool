@@ -1,0 +1,4 @@
+FROM kalilinux/kali-rolling:latest
+RUN apt update && apt -y upgrade && apt install -y iproute2 net-tools ssh iputils-ping netcat-openbsd curl
+COPY ./pivotool.sh /pivotool.sh
+RUN chmod +x /pivotool.sh

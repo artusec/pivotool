@@ -1,0 +1,50 @@
+version: "3.9"
+services:
+    http_server:
+        image: httpd:2.4
+        hostname: http-server
+        container_name: http-server
+        restart: always
+        expose:
+            - "80"
+        networks:
+            master:
+                ipv4_address: 192.168.1.10
+
+    ssh_server:
+        build:
+            context: .
+            dockerfile: ./Dockerfile_SSH
+        hostname: ssh-server
+        container_name: ssh-server
+        restart: always
+        environment:
+          - PUID=1000
+          - PGID=1000
+          - TZ=Europe/Madrid
+          - PASSWORD_ACCESS=true
+          - USER_PASSWORD=password
+          - USER_NAME=arturo
+        networks:
+            master:
+                ipv4_address: 192.168.1.11
+
+    attacker:
+        hostname: attacker
+        build:
+            context: .
+            dockerfile: ./Dockerfile_Attacker
+#        tty: true
+        stdin_open: true
+        container_name: attaker
+        restart: always 
+        networks:
+            master:
+                ipv4_address: 192.168.1.22
+        init: true
+
+networks:
+    master:
+        ipam:
+            config:
+                - subnet: 192.168.1.0/24  

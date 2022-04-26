@@ -195,7 +195,7 @@ get_command(){
                         n) # nets
                                 nets=()
                                 echo "[*] Getting nets."
-                                temp=$(ifconfig | grep "inet " | awk '{print $2}')
+                                temp=$(ip a | grep "inet " | awk '{print $2}')
                                 for net in $(echo $temp)
                                 do
                                         nets=( "${nets[@]}" "$net" )
