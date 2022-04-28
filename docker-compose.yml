@@ -34,9 +34,8 @@ services:
         build:
             context: .
             dockerfile: ./Dockerfile_Attacker
-#        tty: true
         stdin_open: true
-        container_name: attaker
+        container_name: attacker
         restart: always 
         networks:
             master:

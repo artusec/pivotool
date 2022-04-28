@@ -144,11 +144,14 @@ show_targets() {
 }
 
 show_ports() {
-        cont=0
-        for port in "${ports[@]}"
+        for line in "${ports[@]}"
         do
-                echo "$cont -> ${targets[$cont]} : $port"
-                ((cont=cont+1))
+                if [ -z "$line" ]; then
+                        port="All ports closed"
+                fi
+                index=$(echo $line | awk -F, '{print $1}')
+                port=$(echo $line | awk -F, '{print $2}')
+                echo "$index -> ${targets[$index]} : $port"
         done
 }
 
@@ -235,7 +238,7 @@ scan_command(){
                                 done)
                                 unset temp; temp=$(for i in $(echo $ips)
                                 do
-                                        ping -c 1 -W 5 ${i} | grep -q "bytes from" && echo "${i}" &
+                                        ping -c 1 -W 5 ${i} 2>/dev/null | grep -q "bytes from" && echo "${i}" &
                                 done; wait)
 
                                 for host in $(echo $temp)
@@ -253,13 +256,14 @@ scan_command(){
                                 if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
                                 target=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
                                 echo "Scanning target: $target"
-                                unset temp; temp=$(for i in $(seq 1 81)
+                                unset temp; temp=$(for i in $(seq 1 81) # change to 65535
                                 do
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
                                 echo "[*] Discovered ${temp}"
-                                unset 'ports[$OPTARG]'
-                                ports=( "${ports[@]:0:$OPTARG}" "${temp}" "${ports[@]:$OPTARG}" )
+                                if [[ ! " ${ports[*]} " =~ " $OPTARG,${temp} " ]]; then
+                                        ports=( "${ports[@]}" "$OPTARG,${temp}" )
+                                fi
                                 show_ports
                                 ;;
                 esac
