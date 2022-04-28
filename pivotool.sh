@@ -3,8 +3,9 @@
 ################################################################################
 # pivotool -- by artuyero                                                      #
 #                                                                              #
-# As expected, is a simple tool written in bash that could help you in the     #
-# post exploitation phase to pivot to other systems.                           #
+# pivotool in ethical hacking, as expected, is a simple tool written in bash   #
+# that could help you in the post exploitation phase to pivot to other systems.#
+#                                                                              #
 # Usage:                                                                       #
 # $ ./pivotool                                                                 #
 # _PIVOTOOL_:~$ <command> <args>                                               #
@@ -297,7 +298,6 @@ pivot_command(){
         else
                 bash -c "rm -f fifo;mkfifo fifo;nc -l -p \"$localPort\" <fifo | nc \"$pivotTarget\" \"$remotePort\" >fifo" &
                 sleep 2
-                echo "$localPort $pivotTarget $remotePort $!"
                 tunnels=( "${tunnels[@]}" "PID: $! -> $localPort:$pivotTarget:$remotePort" )
                 echo "[*] Tunnel created, check port $localPort"
         fi
@@ -347,7 +347,7 @@ report_command() {
                         echo ${nets[$actualNet]}
                 fi
                 echo "     $(echo $target | awk -F, '{print $2}')"
-                echo "        ${ports[$cont]}"
+                echo "        $(echo  ${ports[$cont]} | awk -F, '{print $2}')"
                 ((cont=cont+1))
         done
 }
