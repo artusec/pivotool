@@ -8,8 +8,8 @@ services:
         expose:
             - "80"
         networks:
-            master:
-                ipv4_address: 192.168.1.10
+            internet:
+                ipv4_address: 172.16.0.11
 
     ssh_server:
         build:
@@ -26,8 +26,28 @@ services:
           - USER_PASSWORD=password
           - USER_NAME=arturo
         networks:
-            master:
-                ipv4_address: 192.168.1.11
+            internet:
+                ipv4_address: 172.16.0.12
+            red_interna:
+                ipv4_address: 10.11.12.11
+
+    backend:
+        build:
+            context: .
+            dockerfile: ./Dockerfile_SSH
+        hostname: backend
+        container_name: backend
+        restart: always
+        environment:
+          - PUID=1000
+          - PGID=1000
+          - TZ=Europe/Madrid
+          - PASSWORD_ACCESS=true
+          - USER_PASSWORD=password
+          - USER_NAME=arturo
+        networks:
+            red_interna:
+                ipv4_address: 10.11.12.12
 
     attacker:
         hostname: attacker
@@ -38,12 +58,18 @@ services:
         container_name: attacker
         restart: always 
         networks:
-            master:
-                ipv4_address: 192.168.1.22
+            internet:
+                ipv4_address: 172.16.0.22
         init: true
 
 networks:
-    master:
+    internet:
+        name: internet
         ipam:
             config:
-                - subnet: 192.168.1.0/24  
+                - subnet: 172.16.0.0/24
+    red_interna:
+        name: red_interna
+        ipam:
+            config:
+                - subnet: 10.11.12.0/24 
