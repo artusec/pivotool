@@ -53,76 +53,60 @@ trap ctrl_c INT
 # usages -----------------------------------------------------------------------
 usage(){
         echo "Usage:"
-        echo "  $ ./pivotool.sh"
-        echo
+        echo -e '\t$ ./pivotool.sh';echo
         echo "Commands:"
-        echo "  get     Obtains data from the victim server and its environment."
-        echo "  scan    Performs a scan of a network or host."
-        echo "  pivot   Performs port forwarding."
-        echo "  show    Displays the information that has been collected."
-        echo "  exec    Run a bash command on the system."
-        echo
-        echo "Use the "-h" option after each command to get its help."
-        echo
+        echo -e '\tget\tObtains data from the victim server and its environment.'
+        echo -e '\tscan\tPerforms a scan of a network or host.'
+        echo -e '\tpivot\tPerforms port forwarding.'
+        echo -e '\tshow\tDisplays the information that has been collected.'
+        echo -e '\texec\tRun a bash command on the system.';echo
+        echo "Use the "-h" option after each command to get its help.";echo
 }
 
 get_usage() {
-        echo "[*] Displaying \"get\" help."
-        echo
-        echo "\$ get [flags] -> Obtains data from the victim server and its environment."
-        echo
+        echo "[*] Displaying \"get\" help.";echo
+        echo "\$ get [flags] -> Obtains data from the victim server and its environment.";echo
         echo "Flags:"
-        echo "  -n    Gets the networks to which the host is connected."
-        echo "  -i    Gets system info."
-        echo
+        echo -e '\t-n\tGets the networks to which the host is connected.'
+        echo -e '\t-i\tGets system info.';echo
 }
 
 scan_usage() {
-        echo "[*] Displaying \"scan\" help."
-        echo
-        echo "\$ scan [flags] -> Performs a scan of a network or host."
-        echo
+        echo "[*] Displaying \"scan\" help.";echo
+        echo "\$ scan [flags] -> Performs a scan of a network or host.";echo
         echo "Flags:"
-        echo "  -n INT    Performs a ping scan on the selected network."
-        echo "  -t INT    Performs a simple port scan on the selected host."
+        echo -e '\t-n INT\tPerforms a ping scan on the selected network.'
+        echo -e '\t-t INT\tPerforms a simple port scan on the selected host.'
         echo
 }
 
 pivot_usage() {
-        echo "[*] Displaying \"pivot\" help."
-        echo
-        echo "\$ pivot [flags] -> Perform a port forwarding."
-        echo
+        echo "[*] Displaying \"pivot\" help.";echo
+        echo "\$ pivot [flags] -> Perform a port forwarding.";echo
         echo "Flags:"
-        echo "  -t INT    Index of the target (show -t)."
-        echo "  -p INT    Remote port."
-        echo "  -P INT    Local port."
-        echo
+        echo -e '\t-t INT\tIndex of the target (show -t).'
+        echo -e '\t-p INT\tRemote port.'
+        echo -e '\t-P INT\tLocal port.';echo
 }
 
 show_usage() {
-        echo "[*] Displaying \"show\" help."
-        echo
-        echo "$ show [flags} -> Displays the information that has been collected."
-        echo
+        echo "[*] Displaying \"show\" help.";echo
+        echo "\$ show [flags] -> Displays the information that has been collected.";echo
         echo "Flags:"
-        echo "  -n    Show the nets"
-        echo "  -t    Show the targets"
-        echo
+        echo -e '\t-n\tShow the nets.'
+        echo -e '\t-t\tShow the targets.'
+        echo -e '\t-p\tShow the ports of each target.'
+        echo -e '\t-T\tShow the created tunnels.';echo
 }
 
 exec_usage() {
-        echo "Displaying \"exec\" help."
-        echo
-        echo "$ exec [command] -> Exec bash -c <command>"
-        echo
+        echo "Displaying \"exec\" help.";echo
+        echo "\$ exec [command] -> Exec bash -c <command>";echo
 }
 
 report_usage() {
-        echo "Displaying \"report\" help."
-        echo
-        echo "$ report -> Write all info in a file."
-        echo
+        echo "Displaying \"report\" help.";echo
+        echo "\$ report -> Write all info in a file.";echo
 }
 
 # shows ------------------------------------------------------------------------
@@ -147,12 +131,10 @@ show_targets() {
 show_ports() {
         for line in "${ports[@]}"
         do
-                if [ -z "$line" ]; then
-                        port="All ports closed"
-                fi
-                index=$(echo $line | awk -F, '{print $1}')
+                indexTarget=$(echo $line | awk -F, '{print $1}')
                 port=$(echo $line | awk -F, '{print $2}')
-                echo "$index -> ${targets[$index]} : $port"
+                target=$(echo ${targets[$indexTarget]} | awk -F, '{print $2}')
+                echo "$indexTarget -> $target : $port"
         done
 }
 
@@ -178,7 +160,7 @@ is_positive_integer() {
 house_cleaning(){
         echo "[*] Cleaning..."
         history -c
-        rm ./fifo  2>/dev/null
+        rm ./fifo ./report.pt 2>/dev/null
         for tunnel in "${tunnels[@]}"
         do
                 pid=$(echo $tunnel | cut -d" " -f2)
@@ -261,6 +243,9 @@ scan_command(){
                                 do
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
+                                if [ -z "$temp" ]; then
+                                        temp="no open ports"
+                                fi
                                 echo "[*] Discovered ${temp}"
                                 if [[ ! " ${ports[*]} " =~ " $OPTARG,${temp} " ]]; then
                                         ports=( "${ports[@]}" "$OPTARG,${temp}" )
@@ -276,6 +261,7 @@ pivot_command(){
                 case "$opt" in
                         h|\?)
                                 pivot_usage
+                                return
                                 ;;
                         t)
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n INT'."; return; fi
@@ -312,48 +298,71 @@ show_command(){
                                 ;;
                         n)
                                 show_nets
-                                return
                                 ;;
                         t)
                                 show_targets
-                                return
                                 ;;
                         p)
                                 show_ports
-                                return
                                 ;;
                         T)
                                 show_tunnels
-                                return
                                 ;;
                 esac
         done
 }
 
 exec_command() {
+        while getopts "h" opt; do
+                case "$opt" in
+                        h) # help
+                                exec_usage
+                                return
+                                ;;
+                esac
+        done
         echo "[*] Executing shell command: ${1}"
         bash -c "${1}"
 }
 
 report_command() {
-        cont=0
-        actualNet=$(echo "${targets[$cont]}" | awk -F, '{print $1}')
-        echo ${nets[$actualNet]}
-        for target in "${targets[@]}"
-        do
-                nextNet=$(echo "${targets[$cont]}" | awk -F, '{print $1}')
-                if [ ! $actualNet -eq $nextNet ] ; then
-                        actualNet=$nextNet
-                        echo ${nets[$actualNet]}
-                fi
-                echo "     $(echo $target | awk -F, '{print $2}')"
-                echo "        $(echo  ${ports[$cont]} | awk -F, '{print $2}')"
-                ((cont=cont+1))
+        while getopts "h" opt; do
+                case "$opt" in
+                        h) # help
+                                report_usage
+                                return
+                                ;;
+                esac
         done
+        indexNet=0
+        date >> report.pt
+        for net in "${nets[@]}"
+        do
+                echo $net
+                indexTarget=0
+                for target in "${targets[@]}"
+                do
+                        actualNet=$(echo $target | awk -F, '{print $1}')
+                        if [ "$indexNet" -eq "$actualNet" ] ; then
+                                echo -ne '\t';echo ${targets[$indexTarget]} | awk -F, '{print $2}'
+                                for line in "${ports[@]}"
+                                do
+                                        actualTarget=$(echo $line | awk -F, '{print $1}')
+                                        if [ "$actualTarget" -eq "$indexTarget" ] ; then
+                                                echo -ne '\t\t';echo $line| awk -F, '{print $2}'
+                                        fi
+                                done
+                        fi
+                        ((indexTarget=indexTarget+1))
+                done
+                ((indexNet=indexNet+1))
+        done >> report.pt
+        cat report.pt
 }
 
 # main -------------------------------------------------------------------------
 banner
+cd /tmp
 while true
 do
         read -e -p "$PROMPT " line
