@@ -10,7 +10,7 @@ services:
         restart: always 
         networks:
             internet:
-                ipv4_address: 172.16.0.22
+                ipv4_address: 172.16.0.11
         init: true
 
     http_server:
@@ -22,7 +22,9 @@ services:
             - "80"
         networks:
             internet:
-                ipv4_address: 172.16.0.11
+                ipv4_address: 172.16.0.12
+            red_interna:
+                ipv4_address: 10.11.12.11
 
     ssh_server:
         build:
@@ -40,9 +42,9 @@ services:
           - USER_NAME=arturo
         networks:
             internet:
-                ipv4_address: 172.16.0.12
+                ipv4_address: 172.16.0.13
             red_interna:
-                ipv4_address: 10.11.12.11
+                ipv4_address: 10.11.12.12
 
     backend:
         build:
@@ -60,7 +62,7 @@ services:
           - USER_NAME=arturo
         networks:
             red_interna:
-                ipv4_address: 10.11.12.12
+                ipv4_address: 10.11.12.13
 
 
 
