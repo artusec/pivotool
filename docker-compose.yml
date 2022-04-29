@@ -1,5 +1,18 @@
 version: "3.9"
 services:
+    attacker:
+        hostname: attacker
+        build:
+            context: .
+            dockerfile: ./Dockerfile_Attacker
+        stdin_open: true
+        container_name: attacker
+        restart: always 
+        networks:
+            internet:
+                ipv4_address: 172.16.0.22
+        init: true
+
     http_server:
         image: httpd:2.4
         hostname: http-server
@@ -49,18 +62,7 @@ services:
             red_interna:
                 ipv4_address: 10.11.12.12
 
-    attacker:
-        hostname: attacker
-        build:
-            context: .
-            dockerfile: ./Dockerfile_Attacker
-        stdin_open: true
-        container_name: attacker
-        restart: always 
-        networks:
-            internet:
-                ipv4_address: 172.16.0.22
-        init: true
+
 
 networks:
     internet:
