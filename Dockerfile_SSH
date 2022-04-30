@@ -3,5 +3,6 @@ RUN apt update && apt install openssh-server iputils-ping netcat-openbsd iproute
 RUN useradd -rm -d /home/test -s /bin/bash -g root -G sudo -u 1000 pivotool 
 RUN  echo 'pivotool:pivotool' | chpasswd
 RUN service ssh start
+COPY ./pivotool.sh /pivotool.sh
 EXPOSE 22
 CMD ["/usr/sbin/sshd","-D"]
