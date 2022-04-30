@@ -59,7 +59,7 @@ usage(){
         echo -e '\tscan\tPerforms a scan of a network or host.'
         echo -e '\tpivot\tPerforms port forwarding.'
         echo -e '\tshow\tDisplays the information that has been collected.'
-        echo -e '\texec\tRun a bash command on the system.';echo
+        echo -e '\texec\tRun a bash command on the system.'
         echo -e '\treport\tShow all the information.';echo
         echo "Use the "-h" option after each command to get its help.";echo
 }
