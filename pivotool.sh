@@ -11,6 +11,17 @@
 # _PIVOTOOL_:~$ <command> <args>                                               #
 ################################################################################
 
+# check dependencies------------------------------------------------------------
+echo -n "Checking dependencies..."
+deps="declare set cat echo trap awk history rm cut pkill getopts grep ping sleep nc cd"
+for dep in $deps; do
+        type -a  "$dep" &>/dev/null || {
+        echo >&2 "[ERROR] $dep required";
+        exit 1;
+    }
+done
+echo "OK"
+
 # vars -------------------------------------------------------------------------
 declare -a nets
 declare -a targets
@@ -356,8 +367,9 @@ report_command() {
 }
 
 # main -------------------------------------------------------------------------
+echo -n "Moving to /tmp..."
+(cd /tmp &>/dev/null && echo "OK") || echo "[ERROR] Can not change to /tmp directory, using actual: $(pwd)"
 banner
-cd /tmp &>/dev/null || echo "[ERROR] Can not change to /tmp directory, using actual: $(pwd)"
 history -c
 while true
 do
