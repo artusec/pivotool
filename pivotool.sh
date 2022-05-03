@@ -240,7 +240,7 @@ scan_command(){
                                 if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
                                 target=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
                                 echo "Scanning target: $target"
-                                unset temp; temp=$(for i in $(seq 1 81) # change to 65535
+                                unset temp; temp=$(for i in $(seq 1 65535)
                                 do
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
@@ -364,42 +364,45 @@ report_command() {
 # main -------------------------------------------------------------------------
 banner
 cd /tmp
+history -c
 while true
 do
         read -e -p "$PROMPT " line
-        history -s "$line"
-        cmd=$(echo -e "$line \c" | cut -d ' ' -f1)
-        args=$(echo -e "$line \c" | cut -d' ' -f2-)
-        case "$cmd" in
-                get)
-                        get_command $(echo "$args")
-                        ;;
-                scan)
-                        scan_command $(echo "$args")
-                        ;;
-                pivot)
-                        pivot_command $(echo "$args")
-                        ;;
-                show)
-                        show_command $(echo "$args")
-                        ;;
-                exec)
-                        exec_command "$args"
-                        ;;
-                clear)
-                        clear
-                        ;;
-                report)
-                        report_command
-                        ;;
-                exit)
-                        break
-                        ;;
-                help|*)
-                        usage
-                        ;;
-        esac
-        unset OPTIND
+        if [ ! -z "$line" ]; then
+                history -s "$line"
+                cmd=$(echo -e "$line \c" | cut -d ' ' -f1)
+                args=$(echo -e "$line \c" | cut -d' ' -f2-)
+                case "$cmd" in
+                        get)
+                                get_command $(echo "$args")
+                                ;;
+                        scan)
+                                scan_command $(echo "$args")
+                                ;;
+                        pivot)
+                                pivot_command $(echo "$args")
+                                ;;
+                        show)
+                                show_command $(echo "$args")
+                                ;;
+                        exec)
+                                exec_command "$args"
+                                ;;
+                        clear)
+                                clear
+                                ;;
+                        report)
+                                report_command
+                                ;;
+                        exit)
+                                break
+                                ;;
+                        help|*)
+                                usage
+                                ;;
+                esac
+                unset OPTIND
+        fi
 done
 
 house_cleaning
