@@ -61,7 +61,7 @@ usage(){
         echo -e '\tshow\tDisplays the information that has been collected.'
         echo -e '\texec\tRun a bash command on the system.'
         echo -e '\treport\tShow all the information.';echo
-        echo "Use the "-h" option after each command to get its help.";echo
+        echo "Use the '-h' option after each command to get its help.";echo
 }
 
 get_usage() {
@@ -124,7 +124,7 @@ show_targets() {
         cont=0
         for target in "${targets[@]}"
         do
-                echo "$cont -> $(echo $target | awk -F, '{print $2}')"
+                echo "$cont -> $(echo "$target" | awk -F, '{print $2}')"
                 ((cont=cont+1))
         done 
 }
@@ -132,10 +132,10 @@ show_targets() {
 show_ports() {
         for line in "${ports[@]}"
         do
-                indexTarget=$(echo $line | awk -F, '{print $1}')
-                port=$(echo $line | awk -F, '{print $2}')
-                target=$(echo ${targets[$indexTarget]} | awk -F, '{print $2}')
-                echo "$indexTarget -> $target : $port"
+                indexTarget=$(echo "$line" | awk -F, '{print $1}')
+                port=$(echo "${line}" | awk -F, '{print $2}')
+                target=$(echo "${targets[$indexTarget]}" | awk -F, '{print $2}')
+                echo "$indexTarget" "->" "$target" ":" "$port"
         done
 }
 
@@ -164,8 +164,8 @@ house_cleaning(){
         rm ./fifo ./report.pt 2>/dev/null
         for tunnel in "${tunnels[@]}"
         do
-                pid=$(echo $tunnel | cut -d" " -f2)
-                pkill -TERM -P $pid
+                pid=$(echo "$tunnel" | cut -d" " -f2)
+                pkill -TERM -P "$pid"
                 ((cont=cont+1))
         done
         bye
@@ -183,7 +183,7 @@ get_command(){
                                 nets=()
                                 echo "[*] Getting nets."
                                 temp=$(ip a | grep "inet " | awk '{print $2}')
-                                for net in $(echo $temp)
+                                for net in $temp
                                 do
                                         nets=( "${nets[@]}" "$net" )
                                 done
@@ -191,7 +191,7 @@ get_command(){
                                 ;;
                         i) # system info
                                 echo "[*] Getting system info."
-                                echo $(uname -a)
+                                uname -a
                                 ;;
                 esac
         done
@@ -210,23 +210,21 @@ scan_command(){
                                 if [ "$OPTARG" -ge ${#nets[@]} ] ; then echo "[ERROR] Invalid network number. Enter from 0 to $((${#nets[@]}-1))"; return; fi
                                 net=${nets[$OPTARG]}
                                 echo "[*] Scanning net: $net"
-                                BASE_IP=$(echo $net | awk -F\/ '{print $1}')
-                                IP_CIDR=$(echo $net | awk -F\/ '{print $2}')
+                                BASE_IP=$(echo "$net" | awk -F\/ '{print $1}')
+                                IP_CIDR=$(echo "$net" | awk -F\/ '{print $2}')
                                 IP_MASK=$((0xFFFFFFFF << (32 - ${IP_CIDR})))
-                                IFS=. read a b c d <<<${BASE_IP}
+                                IFS=. read a b c d <<<"${BASE_IP}"
                                 ip=$((($b << 16) + ($c << 8) + $d))
                                 ipstart=$((${ip} & ${IP_MASK}))
                                 ipend=$(((${ipstart} | ~${IP_MASK}) & 0x7FFFFFFE))
                                 ips=$(seq ${ipstart} ${ipend} | while read i; do
                                         echo $a.$((($i & 0xFF0000) >> 16)).$((($i & 0xFF00) >> 8)).$(($i & 0x00FF))
                                 done)
-                                unset temp; temp=$(for i in $(echo $ips)
-                                do
-                                        ping -c 1 -W 5 ${i} 2>/dev/null | grep -q "bytes from" && echo "${i}" &
+                                unset temp; temp=$(for i in $ips; do
+                                        ping -c 1 -W 5 "${i}" 2>/dev/null | grep -q "bytes from" && echo "${i}" &
                                 done; wait)
 
-                                for host in $(echo $temp)
-                                do
+                                for host in $temp; do
                                         echo "[*] Discovered ${host}"
                                         if [[ ! " ${targets[*]} " =~ " $OPTARG,${host} " ]]; then
                                                 targets=( "${targets[@]}" "${OPTARG},${host}" )
@@ -238,10 +236,9 @@ scan_command(){
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo '[ERROR] There are no registered targets. Run "scan -n <net>".'; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
-                                target=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
+                                target=$(echo "${targets[$OPTARG]}" | awk -F, '{print $2}')
                                 echo "Scanning target: $target"
-                                unset temp; temp=$(for i in $(seq 1 65535)
-                                do
+                                unset temp; temp=$(for i in $(seq 1 65535); do
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
                                 if [ -z "$temp" ]; then
@@ -268,7 +265,7 @@ pivot_command(){
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo "[ERROR] There are no registered targets. Run 'scan -n INT'."; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
                                 if [ "$OPTARG" -gt ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
-                                pivotTarget=$(echo ${targets[$OPTARG]} | awk -F, '{print $2}')
+                                pivotTarget=$(echo "${targets[$OPTARG]}" | awk -F, '{print $2}')
                                 ;;
                         p)
                                 remotePort=$OPTARG
@@ -337,20 +334,17 @@ report_command() {
         done
         indexNet=0
         date >> report.pt
-        for net in "${nets[@]}"
-        do
-                echo $net
+        for net in "${nets[@]}"; do
+                echo "$net"
                 indexTarget=0
-                for target in "${targets[@]}"
-                do
-                        actualNet=$(echo $target | awk -F, '{print $1}')
+                for target in "${targets[@]}"; do
+                        actualNet=$(echo "$target" | awk -F, '{print $1}')
                         if [ "$indexNet" -eq "$actualNet" ] ; then
-                                echo -ne '\t';echo ${targets[$indexTarget]} | awk -F, '{print $2}'
-                                for line in "${ports[@]}"
-                                do
-                                        actualTarget=$(echo $line | awk -F, '{print $1}')
+                                echo -ne '\t';echo "${targets[$indexTarget]}" | awk -F, '{print $2}'
+                                for line in "${ports[@]}"; do
+                                        actualTarget=$(echo "$line" | awk -F, '{print $1}')
                                         if [ "$actualTarget" -eq "$indexTarget" ] ; then
-                                                echo -ne '\t\t';echo $line| awk -F, '{print $2}'
+                                                echo -ne '\t\t';echo "$line"| awk -F, '{print $2}'
                                         fi
                                 done
                         fi
@@ -363,27 +357,30 @@ report_command() {
 
 # main -------------------------------------------------------------------------
 banner
-cd /tmp
+cd /tmp &>/dev/null || echo "[ERROR] Can not change to /tmp directory, using actual: $(pwd)"
 history -c
 while true
 do
-        read -e -p "$PROMPT " line
-        if [ ! -z "$line" ]; then
+        read -rep "$PROMPT " line
+        if [ -n "$line" ]; then
                 history -s "$line"
-                cmd=$(echo -e "$line \c" | cut -d ' ' -f1)
-                args=$(echo -e "$line \c" | cut -d' ' -f2-)
+                cmd=$(echo -en "$line \c" | cut -d ' ' -f1)
+                args=$(echo -en "$line \c" | cut -d' ' -f2-)
+                if [ ! -n "$args" ] || [ $(echo "$args" | grep -q "-"; echo $?) -eq 1 ]; then
+                        args="-h"
+                fi
                 case "$cmd" in
                         get)
-                                get_command $(echo "$args")
+                                get_command $args
                                 ;;
                         scan)
-                                scan_command $(echo "$args")
+                                scan_command $args
                                 ;;
                         pivot)
-                                pivot_command $(echo "$args")
+                                pivot_command $args
                                 ;;
                         show)
-                                show_command $(echo "$args")
+                                show_command $args
                                 ;;
                         exec)
                                 exec_command "$args"

@@ -64,8 +64,6 @@ services:
             red_interna:
                 ipv4_address: 10.11.12.13
 
-
-
 networks:
     internet:
         name: internet
