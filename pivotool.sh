@@ -11,7 +11,7 @@
 # _PIVOTOOL_:~$ <command> <args>                                               #
 ################################################################################
 
-# check dependencies------------------------------------------------------------
+# check dependencies -----------------------------------------------------------
 echo -n "Checking dependencies..."
 deps="declare set cat echo trap awk history rm cut pkill getopts grep ping sleep nc cd"
 for dep in $deps; do
@@ -112,7 +112,7 @@ show_usage() {
 }
 
 exec_usage() {
-        echo "Displaying \"exec\" help.";echo
+        echo "[*] Displaying \"exec\" help.";echo
         echo "\$ exec [command] -> Exec bash -c <command>";echo
 }
 
@@ -378,7 +378,7 @@ do
                 history -s "$line"
                 cmd=$(echo -en "$line \c" | cut -d ' ' -f1)
                 args=$(echo -en "$line \c" | cut -d' ' -f2-)
-                if [ ! -n "$args" ] || [ $(echo "$args" | grep -q "-"; echo $?) -eq 1 ]; then
+                if [ ! -n "$args" ] || [[ $(echo "$args" | grep -q "-"; echo $?) -eq 1 && ! "$cmd" -eq "exec" ]]; then
                         args="-h"
                 fi
                 case "$cmd" in
