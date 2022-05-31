@@ -13,7 +13,7 @@
 
 # check dependencies -----------------------------------------------------------
 echo -n "Checking dependencies..."
-deps="declare set cat echo trap awk history rm cut pkill getopts grep ping sleep nc cd"
+deps="ip declare set cat echo trap awk history rm cut pkill getopts grep ping sleep nc cd"
 for dep in $deps; do
         type -a  "$dep" &>/dev/null || {
         echo >&2 "[ERROR] $dep required";
@@ -43,7 +43,7 @@ cat << "EOF"
 ██╔═══╝ ██║╚██╗ ██╔╝██║   ██║   ██║   ██║   ██║██║   ██║██║
 ██║     ██║ ╚████╔╝ ╚██████╔╝   ██║   ╚██████╔╝╚██████╔╝███████╗
 ╚═╝     ╚═╝  ╚═══╝   ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝
-by artuyero
+by artusec
 
 EOF
 }
@@ -182,6 +182,10 @@ house_cleaning(){
         bye
 }
 
+check_Ports(){
+        [ ! -z "$1" ] && [ ! -z "$2" ] && [ "$1" -gt 0 ] && [ "$1" -lt 65536 ] && [ "$2" -gt 0 ] && [ "$2" -lt 65536 ] && [ "$2" -gt "$1" ]
+}
+
 # commands ---------------------------------------------------------------------
 get_command(){
         while getopts "hni" opt; do
@@ -246,10 +250,15 @@ scan_command(){
                         t) # port scan
                                 if [ "${#targets[@]}" -eq 0 ] ; then echo '[ERROR] There are no registered targets. Run "scan -n <net>".'; return; fi
                                 if ! is_positive_integer "$OPTARG" ; then return; fi
-                                if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))"; return; fi
+                                if [ "$OPTARG" -ge ${#targets[@]} ] ; then echo "[ERROR] Invalid target number. Enter from 0 to $((${#targets[@]}-1))."; return; fi
                                 target=$(echo "${targets[$OPTARG]}" | awk -F, '{print $2}')
-                                echo "Scanning target: $target"
-                                unset temp; temp=$(for i in $(seq 1 65535); do
+                                read -rep "Enter port range to scan (e.g. 20-80): " range
+                                if [ ! $(echo "$args" | grep -q "-"; echo $?) -eq 0 ]; then echo "[ERROR] Port range must be like x-y."; return; fi
+                                startPort=$(echo "$range" | awk -F\- '{print $1}')
+                                endPort=$(echo "$range" | awk -F\- '{print $2}')
+                                if ! check_Ports $startPort $endPort; then echo "[ERROR] Invalid port range."; return; fi
+                                echo "[*] Scanning target: $target"
+                                unset temp; temp=$(for i in $(seq "$startPort" "$endPort"); do
                                         timeout 1 bash -c "echo > /dev/tcp/${target}/${i}" 2>/dev/null && echo -n "${i} " &
                                 done; wait)
                                 if [ -z "$temp" ]; then
