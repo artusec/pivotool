@@ -23,7 +23,7 @@ services:
         networks:
             internet:
                 ipv4_address: 172.16.0.12
-            red_interna:
+            internal_network:
                 ipv4_address: 10.11.12.11
 
     ssh_server:
@@ -43,7 +43,7 @@ services:
         networks:
             internet:
                 ipv4_address: 172.16.0.13
-            red_interna:
+            internal_network:
                 ipv4_address: 10.11.12.12
 
     backend:
@@ -58,10 +58,8 @@ services:
           - PGID=1000
           - TZ=Europe/Madrid
           - PASSWORD_ACCESS=true
-          - USER_PASSWORD=password
-          - USER_NAME=arturo
         networks:
-            red_interna:
+            internal_network:
                 ipv4_address: 10.11.12.13
 
 networks:
@@ -70,8 +68,8 @@ networks:
         ipam:
             config:
                 - subnet: 172.16.0.0/24
-    red_interna:
-        name: red_interna
+    internal_network:
+        name: internal_network
         ipam:
             config:
                 - subnet: 10.11.12.0/24 
