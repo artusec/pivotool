@@ -108,11 +108,11 @@ docker compose up -d
 docker exec -it ssh-server bash
 ```
 
-![image](https://user-images.githubusercontent.com/44441475/170476989-3a292bc7-ffba-47cd-a79a-8208e4d9cb1a.png)
+![image](https://user-images.githubusercontent.com/44441475/171835892-7cff14f6-fb28-4a64-a289-ef49cd05ebeb.png)
 
 ## Screenshoots
 ### First view
-![image](https://user-images.githubusercontent.com/44441475/170474046-3a3671a0-4df0-4476-ab42-6601bcf675f7.png)
+![image](https://user-images.githubusercontent.com/44441475/171836153-67fa5e7a-70d3-417d-9cce-c7de4f23cfc4.png)
 
 ### Commands
 ![image](https://user-images.githubusercontent.com/44441475/170473897-fe55ba50-1eb3-41c3-b154-90a7f3501ea1.png)
